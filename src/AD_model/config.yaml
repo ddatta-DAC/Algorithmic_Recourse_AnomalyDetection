@@ -1,0 +1,16 @@
+emb_dims:
+    - 12
+    - 14
+    - 16
+    - 18
+    - 20
+    - 22
+    - 24
+DATA_LOC: './../../GeneratedData'
+AD_model_data_subdir: 'AD_model_data'
+train_epochs : 100
+learning_rate : 0.001
+batch_size : 256
+error_tol : 0.005
+model_save_dir: './ad_model_saved'
+
