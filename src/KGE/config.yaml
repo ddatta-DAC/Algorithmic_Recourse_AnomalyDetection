@@ -1,0 +1,7 @@
+DATA_DIR: './../../GeneratedData'
+embedding_dimension : 100 
+kg_train_num_neg_samples : 200
+kg_train_epochs : 250
+kg_train_patience: 10
+kg_emb_save_dir : './KG_emb'
+kg_train_batch_size : 1024
