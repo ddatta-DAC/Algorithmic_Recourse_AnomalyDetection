@@ -1,0 +1,17 @@
+data_loc: './../../GeneratedData'
+base_emb_dim: 64
+model_save_dir: 'model_save_dir'
+encoder_xformer_heads: 8
+encoder_num_xformer_layers : 4
+stage_1_train_epochs: 200
+stage_2_train_epochs: 250
+stage_1_batch_size: 256
+stage_2_batch_size: 512
+stage1_decoder_fcn_dims:
+    - 128
+    - 64
+stage2_decoder_densityFCN_dims: 
+    - 32
+    - 16
+    - 1
+
