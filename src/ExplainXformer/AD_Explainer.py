@@ -13,8 +13,9 @@ import pandas as pd
 import torch 
 from tqdm import tqdm
 from torch import nn
-from PanjivaDataPreprocessor import data_fetcher
+import data_fetcher
 from torch.nn import Module
+from torch.optim.lr_scheduler import ChainedScheduler,CosineAnnealingLR,CyclicLR
 from torch import LongTensor as LT
 from torch import FloatTensor as FT
 from AD_dataset import anomaly_dataset
@@ -28,10 +29,17 @@ import yaml
 from encoder_v1 import Encoder
 id_col = 'PanjivaRecordID'
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 # -------------------------
-_rel_path_ = os.path.realpath(__file__)
+_rel_path_ = os.path.dirname(os.path.realpath(__file__))
 CONFIG_FILE = os.path.join(_rel_path_,'config.yaml')
 # -------------------------
+
+def _useCPU_():
+    global DEVICE
+    DEVICE = torch.device("cpu")
+    return
+
 
 '''
 This is the decoder for the explainer 
@@ -57,6 +65,7 @@ class adExp_decoder(Module):
             _modules_.append(nn.Bilinear(entity_emb_dim, entity_emb_dim*2, entity_emb_dim))
         self.biLinearLayer = nn.ModuleList(_modules_)
         self.PE = PE.PositionalEncoding(entity_emb_dim)
+        self.PE.to(self.device)
         # Assume that entity_emb_dim == base embedding dimension
         density_fcn_inp_dim = entity_emb_dim + entity_emb_dim
         
@@ -80,10 +89,14 @@ class adExp_decoder(Module):
             
             
     def forward(self, enc_seq_data, entity_emb):
-        pe_vector = torch.zeros(enc_seq_data.shape).to(self.device)
-        pe_vector = self.PE(pe_vector)
-        token_density = []
         
+        pe_vector = torch.zeros(enc_seq_data.shape).to(self.device)
+        
+        pe_vector = self.PE(pe_vector).to(self.device)
+        
+        token_density = []
+        entity_emb.to(self.device)
+        enc_seq_data.to(self.device)
         for token_idx in range(self.seq_len):
             _x0 = torch.cat( [entity_emb[:,token_idx,:], pe_vector[:,token_idx,:]], dim=-1)
             _x1 = self.biLinearLayer[token_idx](enc_seq_data[:,token_idx,:], _x0 )
@@ -135,9 +148,9 @@ class xformer_ADExp_v1(Module):
             density_ffn,
             device
         )
-        self.encoder_obj.to(device)
-        self.decoder_obj.to(device)
-        
+        self.encoder_obj.to(self.device)
+        self.decoder_obj.to(self.device)
+        print(self.encoder_obj.device, self.decoder_obj.device)
         
     '''
     x has shape [batch, seq_len, entity_idx]
@@ -146,6 +159,7 @@ class xformer_ADExp_v1(Module):
         # enc_seq_data is output of the transformer
         # entity_emb is the first layer of embedding
         enc_seq_data, entity_emb = self.encoder_obj(seq_data)
+        
         token_density = self.decoder_obj(enc_seq_data, entity_emb )
         return token_density
 
@@ -156,20 +170,39 @@ class ADExp_model_container:
         ad_obj,
         model_save_dir = 'model_save_dir',
         LR = 0.001,
-        device = torch.device("cpu")
+        device = None
     ):
+        self.device = device
         self.ad_obj = ad_obj
-        self.ad_obj.to(device)
-        
+        self.ad_obj.to(self.device)
+        print('[ADExp_model_container]', self.device)
+        print('[ADExp_model_container  ad_obj ]', self.ad_obj.device)
         self.signature = 'ad_{}'.format(self.ad_obj.encoder_obj.emb_dim)
         param_list = self.ad_obj.decoder_obj.parameters()
         self.opt = torch.optim.Adam(param_list, LR)
-        self.device = device
         self.model_save_dir = model_save_dir
+        
+        # scheduler1 = CosineAnnealingLR(
+        #     self.opt, 
+        #     T_max=10,
+        #     eta_min=0, 
+        #     last_epoch=120
+        # )
+        # scheduler2 = CyclicLR(
+        #     self.opt, 
+        #     base_lr=0.001, 
+        #     max_lr=0.1,
+        #     step_size_up=10,
+        #     mode="exp_range",
+        #     gamma=0.85)
+        # self.scheduler = ChainedScheduler([scheduler1, scheduler2])
+
+        
         self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             self.opt, 
-            T_max=10,
-            eta_min=0
+            T_max = 10,
+            eta_min = 0.0001,
+            verbose = False
         )
         return
     
@@ -186,7 +219,6 @@ class ADExp_model_container:
     
     def save_model(self):
         Path(self.model_save_dir).mkdir( exist_ok=True, parents=True)
-    
         fpath = os.path.join(self.model_save_dir, 'adExp_decoder_{}.pth'.format(self.signature))
         torch.save(self.ad_obj, fpath) 
     
@@ -194,6 +226,7 @@ class ADExp_model_container:
         fpath = os.path.join(self.model_save_dir, 'adExp_decoder_{}.pth'.format(self.signature))
         self.ad_obj = torch.load(fpath)
         self.ad_obj.eval() 
+        self.ad_obj.to(self.device)
         return self.ad_obj
     
     def _train_model_(
@@ -234,7 +267,11 @@ class ADExp_model_container:
         self, 
         seq_df: pd.DataFrame,
         adjust_id = True # Add 1 to compensate for design
-    ):
+    ): 
+        self.ad_obj.eval()
+        self.ad_obj.encoder_obj.eval()
+        self.ad_obj.decoder_obj.eval()
+        print('[predict_entityProb]',self.device)
         global id_col
         # Adjust id
         try: 
@@ -245,14 +282,16 @@ class ADExp_model_container:
             seq_x = seq_df.values + 1
         else:
             seq_x = seq_df.values
-        batch_size = 500
+        batch_size = 512
         num_batches = len(seq_df)//batch_size+1
         results = []
-        for b_idx in tqdm(range(num_batches)): 
-            _x = seq_x[b_idx*batch_size:(batch_size+1)*batch_size]
-            _x = LT(_x).to(self.device)
-            _y = self.ad_obj(_x)
-            results.extend(_y)
+        with torch.no_grad():
+            for b_idx in tqdm(range(num_batches)): 
+                _x = seq_x[b_idx*batch_size:(b_idx+1)*batch_size]
+                _x1 = LT(_x).to(self.device)
+                _y = self.ad_obj(_x1)
+                
+                results.extend(_y.cpu().data.numpy())
         return results
 # -----------------------
 # read in config
@@ -294,7 +333,7 @@ def train_model(subDIR):
     
     density_fcn_dims = config['stage2_decoder_densityFCN_dims']
     encoder_num_xformer_layers = config['encoder_num_xformer_layers']
-    encoder_xformer_heads = encoder['encoder_xformer_heads']
+    encoder_xformer_heads = config['encoder_xformer_heads']
     base_emb_dim = config['base_emb_dim']
     batch_size = config['stage_2_batch_size']
     train_epochs = config['stage_2_train_epochs']
@@ -313,7 +352,8 @@ def train_model(subDIR):
         density_ffn = density_fcn_dims,
         device=DEVICE
     )
-
+    adExp_obj.to(DEVICE)
+    
     dataset_obj = anomaly_dataset(
         data,
         domain_dims,
@@ -348,10 +388,10 @@ def train_model(subDIR):
 # <Object> AD_Explainer type
 # -------------------------------------------------
 def getTrainedModel(DIR):
-    global id_col, _rel_path_
+    global id_col, _rel_path_, DEVICE
     config = _getConfig_()
-    data = data.values + 1
-    domain_dims_df = data_fetcher.get_domain_dims(subDIR)
+    
+    domain_dims_df = data_fetcher.get_domain_dims(DIR)
     cardinality = domain_dims_df['dimension'].tolist()
     domain_dims = domain_dims_df['dimension'].tolist()
     
@@ -362,11 +402,12 @@ def getTrainedModel(DIR):
     model_save_dir = os.path.join(_rel_path_, 'model_save_dir', DIR)
     density_fcn_dims = config['stage2_decoder_densityFCN_dims']
     encoder_num_xformer_layers = config['encoder_num_xformer_layers']
-    encoder_xformer_heads = encoder['encoder_xformer_heads']
+    encoder_xformer_heads = config['encoder_xformer_heads']
     base_emb_dim = config['base_emb_dim']
     enc_model_path = os.path.join(model_save_dir, 'encoder_mlm_{}.pth'.format(encoder_num_xformer_layers))
+    print('[getTrainedModel] DEVICE ::', DEVICE)
     
-    adExp_obj = xformer_AD_v1(
+    adExp_obj = xformer_ADExp_v1(
         entity_emb_dim = base_emb_dim,
         seq_len = seq_len,
         cardinality = cardinality,
@@ -377,7 +418,8 @@ def getTrainedModel(DIR):
         density_ffn = density_fcn_dims,
         device=DEVICE
     )
-
+    adExp_obj.to(DEVICE)
+    print('[getTrainedModel adExp_obj device::]', adExp_obj.device)
     adExp_container_obj = ADExp_model_container(
         adExp_obj,
         model_save_dir = model_save_dir,

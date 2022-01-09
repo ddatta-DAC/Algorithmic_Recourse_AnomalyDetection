@@ -22,8 +22,8 @@ from pathlib import Path
 from data_masker import get_maksed_tokens
 sys.path.append('./..')
 import matplotlib.pyplot as plt
-
-from data_fetcher
+import yaml
+import data_fetcher
 from torch.utils.data import DataLoader
 from decoder_MLM_v1 import decoder_MLM_layer
 from encoder_v1 import Encoder 
@@ -32,7 +32,7 @@ from data_masker import get_maksed_tokens
 _rel_path_ = os.path.dirname(os.path.realpath(__file__))
 CONFIG_FILE = os.path.join(_rel_path_,'config.yaml')
 id_col = 'PanjivaRecordID'
-
+print(DEVICE)
 # -----------------------
 # read in config
 # -----------------------
@@ -214,13 +214,13 @@ def train_xformer_encoder(subDIR):
     cardinality = domain_dims_df['dimension'].tolist()
     cardinality = [ _ + 1 for _ in cardinality]
     
-    density_fcn_dims = config['stage2_decoder_densityFCN_dims']
+    density_fcn_dims = config['stage1_decoder_fcn_dims']
     encoder_num_xformer_layers = config['encoder_num_xformer_layers']
-    encoder_xformer_heads = encoder['encoder_xformer_heads']
+    encoder_xformer_heads = config['encoder_xformer_heads']
     base_emb_dim = config['base_emb_dim']
     batch_size = config['stage_1_batch_size']
     train_epochs = config['stage_1_train_epochs']
-    model_save_dir = os.path.join(_rel_path_, confiig['model_save_dir'],subDIR)
+    model_save_dir = os.path.join(_rel_path_, config['model_save_dir'],subDIR)
     
     xformer_obj = tabXformerMLM_obj(
             emb_dim = base_emb_dim,

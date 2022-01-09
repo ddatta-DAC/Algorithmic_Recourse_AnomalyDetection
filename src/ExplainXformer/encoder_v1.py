@@ -50,7 +50,7 @@ class Encoder(Module):
             [nn.Embedding(cardinality[i]+1, emb_dim) for i in range(self.cat_count)]
         )
         self.PE = PE.PositionalEncoding(emb_dim)
-        
+        self.PE.to(self.device)
         self.cat_xformer = nn.TransformerEncoderLayer(
             d_model = emb_dim, 
             nhead = xformer_heads, 

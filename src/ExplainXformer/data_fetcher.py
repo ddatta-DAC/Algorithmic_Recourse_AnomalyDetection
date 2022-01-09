@@ -41,12 +41,12 @@ def set_up_config(_DIR = None):
     else:
         DIR = CONFIG['DIR']
 
-    save_dir =  CONFIG['save_dir']
-    save_dir = os.path.join(
-        CONFIG['save_dir'],
+    save_dir =  CONFIG['data_loc']
+    data_loc = os.path.join(
+        CONFIG['data_loc'],
         DIR
     )
-    DATA_SOURCE = save_dir
+    DATA_SOURCE = data_loc
     return 
 
 
