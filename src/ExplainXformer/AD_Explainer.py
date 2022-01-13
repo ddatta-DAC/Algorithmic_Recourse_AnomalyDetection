@@ -5,28 +5,37 @@ import argparse
 import numpy as np
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
-import os
 import sys
 sys.path.append('./../')
-sys.path.append('./../')
+import os
+from pathlib import Path
+
+from joblib import Parallel, delayed
+import multiprocessing as MP
+import yaml
 import pandas as pd
 import torch 
 from tqdm import tqdm
 from torch import nn
-import data_fetcher
+
 from torch.nn import Module
 from torch.optim.lr_scheduler import ChainedScheduler,CosineAnnealingLR,CyclicLR
 from torch import LongTensor as LT
 from torch import FloatTensor as FT
-from AD_dataset import anomaly_dataset
 from torch.nn import functional as F
-import sys
-from pathlib import Path
-import PE
-from joblib import Parallel, delayed
-import multiprocessing as MP
-import yaml
-from encoder_v1 import Encoder
+try:
+    import encoder_v1
+    from encoder_v1 import Encoder
+    import data_fetcher
+    from AD_dataset import anomaly_dataset
+    import PE
+except:
+    from . import encoder_v1
+    from .encoder_v1 import Encoder
+    from . import data_fetcher
+    from .AD_dataset import anomaly_dataset
+    from . import PE
+
 id_col = 'PanjivaRecordID'
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -34,12 +43,6 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 _rel_path_ = os.path.dirname(os.path.realpath(__file__))
 CONFIG_FILE = os.path.join(_rel_path_,'config.yaml')
 # -------------------------
-
-def _useCPU_():
-    global DEVICE
-    DEVICE = torch.device("cpu")
-    return
-
 
 '''
 This is the decoder for the explainer 
@@ -91,7 +94,6 @@ class adExp_decoder(Module):
     def forward(self, enc_seq_data, entity_emb):
         
         pe_vector = torch.zeros(enc_seq_data.shape).to(self.device)
-        
         pe_vector = self.PE(pe_vector).to(self.device)
         
         token_density = []
@@ -150,7 +152,7 @@ class xformer_ADExp_v1(Module):
         )
         self.encoder_obj.to(self.device)
         self.decoder_obj.to(self.device)
-        print(self.encoder_obj.device, self.decoder_obj.device)
+        
         
     '''
     x has shape [batch, seq_len, entity_idx]
@@ -175,8 +177,8 @@ class ADExp_model_container:
         self.device = device
         self.ad_obj = ad_obj
         self.ad_obj.to(self.device)
-        print('[ADExp_model_container]', self.device)
-        print('[ADExp_model_container  ad_obj ]', self.ad_obj.device)
+        # print('[ADExp_model_container]', self.device)
+        # print('[ADExp_model_container  ad_obj ]', self.ad_obj.device)
         self.signature = 'ad_{}'.format(self.ad_obj.encoder_obj.emb_dim)
         param_list = self.ad_obj.decoder_obj.parameters()
         self.opt = torch.optim.Adam(param_list, LR)
@@ -271,7 +273,7 @@ class ADExp_model_container:
         self.ad_obj.eval()
         self.ad_obj.encoder_obj.eval()
         self.ad_obj.decoder_obj.eval()
-        print('[predict_entityProb]',self.device)
+        # print('[predict_entityProb]',self.device)
         global id_col
         # Adjust id
         try: 
@@ -405,7 +407,7 @@ def getTrainedModel(DIR):
     encoder_xformer_heads = config['encoder_xformer_heads']
     base_emb_dim = config['base_emb_dim']
     enc_model_path = os.path.join(model_save_dir, 'encoder_mlm_{}.pth'.format(encoder_num_xformer_layers))
-    print('[getTrainedModel] DEVICE ::', DEVICE)
+    # print('[getTrainedModel] DEVICE ::', DEVICE)
     
     adExp_obj = xformer_ADExp_v1(
         entity_emb_dim = base_emb_dim,
@@ -419,7 +421,7 @@ def getTrainedModel(DIR):
         device=DEVICE
     )
     adExp_obj.to(DEVICE)
-    print('[getTrainedModel adExp_obj device::]', adExp_obj.device)
+    # print('[getTrainedModel adExp_obj device::]', adExp_obj.device)
     adExp_container_obj = ADExp_model_container(
         adExp_obj,
         model_save_dir = model_save_dir,

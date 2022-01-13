@@ -9,8 +9,10 @@ from torch import nn
 from typing import *
 sys.path.append('./..')
 # from modules import PE
-import PE
-
+try:
+    import PE
+except:
+    from . import PE
 '''
 Decoder MLM
 '''

@@ -1,7 +1,7 @@
+
 import os
 import sys
-import os
-import sys
+sys.path.append('./..')
 import torch
 import pandas as pd
 import numpy as np
@@ -13,11 +13,13 @@ from torch.nn import functional as F
 
 from typing import *
 import math
-import sys
-sys.path.append('./..')
-# from modules import PE
-import PE
 
+
+# from modules import PE
+try:
+    import PE
+except:
+    from . import PE
 '''
 This is the feature encoder 
 Captures the overall context of the record

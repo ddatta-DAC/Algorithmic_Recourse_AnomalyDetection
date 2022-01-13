@@ -3,6 +3,8 @@
 
 
 import sys
+sys.path.append('./..')
+import argparse
 import os
 import math
 import torch
@@ -15,20 +17,33 @@ from torch import LongTensor as LT
 import numpy as np
 from torch import FloatTensor as FT
 from torch import Tensor as T
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-import sys
-import argparse
+from torch.utils.data import DataLoader
 from pathlib import Path
-from data_masker import get_maksed_tokens
-sys.path.append('./..')
 import matplotlib.pyplot as plt
 import yaml
-import data_fetcher
-from torch.utils.data import DataLoader
-from decoder_MLM_v1 import decoder_MLM_layer
-from encoder_v1 import Encoder 
-from data_masker import get_maksed_tokens
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+try:
+    from data_masker import get_masked_tokens
+except:
+    from .data_masker import get_masked_tokens
+
+try:
+    import  data_fetcher
+except:
+    from . import  data_fetcher
+
+try:
+    from decoder_MLM_v1 import decoder_MLM_layer
+except:
+    from .decoder_MLM_v1 import decoder_MLM_layer
+try:
+    from encoder_v1 import Encoder 
+except:
+    from .encoder_v1 import Encoder 
 # ===========================================================
+
 _rel_path_ = os.path.dirname(os.path.realpath(__file__))
 CONFIG_FILE = os.path.join(_rel_path_,'config.yaml')
 id_col = 'PanjivaRecordID'
@@ -47,7 +62,7 @@ class MLM_DataSet(torch.utils.data.Dataset):
     def __init__(self, data, cardinality):
         super(MLM_DataSet).__init__()
         
-        data, labels, token_weights = get_maksed_tokens(
+        data, labels, token_weights = get_masked_tokens(
             data, 
             cardinality
         )
@@ -238,15 +253,16 @@ def train_xformer_encoder(subDIR):
     xformer_obj.save_model()
 
 # ------------------------------------------------- # 
-parser = argparse.ArgumentParser(description='Pretrain the encoder through MLM like objective')
-parser.add_argument(
-    '--dir', 
-    type=str,
-    choices = ['us_import1', 'us_import2', 'us_import3'],
-    help='Train the encoder and the disposable decoder')
+if __name__ == "main":
+    parser = argparse.ArgumentParser(description='Pretrain the encoder through MLM like objective')
+    parser.add_argument(
+        '--dir', 
+        type=str,
+        choices = ['us_import1', 'us_import2', 'us_import3'],
+        help='Train the encoder and the disposable decoder')
 
-args = parser.parse_args()
-subdir = args.dir
-train_xformer_encoder(subDIR=subdir)
+    args = parser.parse_args()
+    subdir = args.dir
+    train_xformer_encoder(subDIR=subdir)
 
 

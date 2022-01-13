@@ -13,7 +13,7 @@ from typing import *
 Set the MASK token to be 0
 token weights = 0 - means the loss does not need to be accounted for 
 '''
-def get_maksed_tokens(
+def get_masked_tokens(
     data, 
     column_cardinalities, 
     k1 = 0.8, 
