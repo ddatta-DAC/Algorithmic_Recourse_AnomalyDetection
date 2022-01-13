@@ -26,10 +26,12 @@ class MEAD(nn.Module):
         emb_dim , 
         device
     ):
-        super(AD, self).__init__()
+        super(MEAD, self).__init__()
         self.device = device
         self.num_entities = num_entities
-        self.emb = nn.Embedding(num_entities,emb_dim)
+        self.emb_dim = emb_dim
+        
+        self.emb = nn.Embedding(num_entities, emb_dim)
         self.mode = 'train'
         return
     
@@ -87,13 +89,18 @@ Model container to train a saingle MEAD model instance
 class AD_model_container():
 
     def __init__(self, entity_count, emb_dim, device, lr = 0.0005):
-        self.model = MEAD ( entity_count, emb_dim, device)
+        self.model = MEAD ( 
+            num_entities = entity_count,  
+            emb_dim = emb_dim, 
+            device = device
+        )
         self.device = device
         
         self.model.to(self.device)
         self.lr = lr
         self.entity_count = entity_count
         self.emb_dim = emb_dim
+        
         self.signature = 'model_{}_{}'.format(emb_dim,int(time()))
         self.save_path = None
         self.epoch_meanLoss_history = []
@@ -106,7 +113,7 @@ class AD_model_container():
         batch_size:int = 512, 
         epochs:int = 10, 
         log_interval: int =100, 
-        tol:float = 0.025
+        tol:float = 0.0025
     ):
         self.model.mode = 'train'
         bs = batch_size
@@ -116,13 +123,13 @@ class AD_model_container():
         loss_value_history = []
         clip_value = 5
         loss_history = []
-
+        min_stop_epochs = (3 * epochs) //4
 
         for e in tqdm(range(epochs)):
             np.random.shuffle(idx)
             epoch_loss =[]
-            pbar = tqdm(range(num_batches))
-            for b in pbar:
+            # pbar = tqdm(range(num_batches))
+            for b in range(num_batches):
                 opt.zero_grad()
                 b_idx = idx[b*bs:(b+1)*bs]
                 x_p = LT(train_x_pos[b_idx]).to(self.device)
@@ -134,21 +141,22 @@ class AD_model_container():
                 opt.step()
                 loss_value_history.append(loss.cpu().data.numpy().tolist())
                 tqdm._instances.clear()
-                pbar.set_postfix({'Batch ': b + 1})
+                # pbar.set_postfix({'Batch ': b + 1})
                 if b % log_interval == 0 :
                     print('Epoch {}  batch {} Loss {:4f}'.format(e, b, loss.cpu().data.numpy()))
                 epoch_loss.append(loss.cpu().data.numpy())
-
+            
             self.epoch_meanLoss_history.append(np.mean(epoch_loss))
             loss_history.extend(epoch_loss)
             print('Mean epoch loss {:.4f}'.format(np.mean(epoch_loss)))
 
-            if len(self.epoch_meanLoss_history) > 10:
+            if len(self.epoch_meanLoss_history) > min_stop_epochs :
+                
                 delta1 = abs(self.epoch_meanLoss_history[-2] - self.epoch_meanLoss_history[-1])
                 delta2 = abs(self.epoch_meanLoss_history[-3] - self.epoch_meanLoss_history[-2])
-
+                
                 if delta2 <= tol and delta1 <= tol:
-                    print('Stopping!')
+                    print('Stopping! | Loss for this epoch :: {:.4f}'.format(np.mean(epoch_loss)))
                     break
 
 
@@ -184,7 +192,10 @@ class AD_model_container():
            
             score_values = self.model(x)
             vals = score_values.cpu().data.numpy().tolist()
-            results.extend(vals)
+            try:
+                results.extend(vals)
+            except:
+                results.append(vals)
         return results
 
     def save_model(
@@ -198,20 +209,28 @@ class AD_model_container():
         loc = os.path.join(loc, self.signature  + '.pth')
         self.save_path = loc
         torch.save(self.model.state_dict(), loc)
-
+        return
 
     def load_model(
         self, 
         path: str = None
     ):
+        
         if self.save_path is None and path is None:
             print('Error . Null path given to load model ')
             return None
         print('Device', self.device)
         if path is None:
             path = self.save_path 
-        self.model = AD( emb_dim=self.emb_dim, num_entities=self.entity_count,device=self.device)
         
+        
+        self.model = MEAD( 
+            emb_dim=self.emb_dim, 
+            num_entities=self.entity_count,
+            device=self.device
+        )
+        
+        print(self.model.emb)
         self.model.load_state_dict(torch.load(path))
         self.model.to(self.device)
         self.model.eval()
