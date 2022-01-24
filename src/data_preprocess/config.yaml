@@ -1,0 +1,82 @@
+'save_dir': './../../GeneratedData'
+'DIR': 'us_import1'
+'train_data_file': 'train_data.csv'
+'test_data_file': 'test_data.csv'
+'id_col': 'PanjivaRecordID'
+'num_jobs': 40
+'hscode_col': 'HSCode'
+'us_import1':
+  'use_cols':
+    - PanjivaRecordID
+    - ConsigneePanjivaID
+    - ShipperPanjivaID
+    - Carrier
+    - ShipmentOrigin
+    - ShipmentDestination
+    - PortOfUnlading
+    - PortOfLading
+    - HSCode
+  'numeric_columns': null
+  'column_value_filters':
+    'Carrier':
+      - '(Usa))'
+  'low_freq_bound': 30
+
+'us_import2':
+  'use_cols':
+    - PanjivaRecordID
+    - ConsigneePanjivaID
+    - ShipperPanjivaID
+    - Carrier
+    - ShipmentOrigin
+    - ShipmentDestination
+    - PortOfUnlading
+    - PortOfLading
+    - HSCode
+  'numeric_columns': null
+  'column_value_filters':
+    'Carrier':
+      - '(Usa))'
+  'low_freq_bound': 30
+  
+'us_import3':
+  'use_cols':
+    - PanjivaRecordID
+    - ConsigneePanjivaID
+    - ShipperPanjivaID
+    - Carrier
+    - ShipmentOrigin
+    - ShipmentDestination
+    - PortOfUnlading
+    - PortOfLading
+    - HSCode
+  'numeric_columns': null
+  'column_value_filters':
+    'Carrier':
+      - '(Usa))'
+  'low_freq_bound': 30
+
+'ecuador_export':
+  'use_cols':
+    - PanjivaRecordID
+    - ConsigneePanjivaID
+    - Carrier
+    - GoodsShipped
+    - PortOfUnlading
+    - ShipmentDestination
+    - ShipmentOrigin
+    - ShipperPanjivaID
+  'low_freq_bound': 10
+  'column_value_filters': 
+  'numeric_columns': null
+'colombia_export':
+  'use_cols':
+    - PanjivaRecordID
+    - ConsigneePanjivaID
+    - HSCode
+    - ShipmentDestination
+    - ShipmentOrigin
+    - ShipperPanjivaID
+  'low_freq_bound': 15
+  'column_value_filters': 
+  'numeric_columns': null

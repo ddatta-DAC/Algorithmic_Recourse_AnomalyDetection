@@ -1,0 +1,5 @@
+ShipmentOrigin,HSCode,PortOfLading
+ShipperPanjivaID,ShipmentOrigin,PortOfLading
+ConsigneePanjivaID,ShipmentDestination,HSCode
+ShipperPanjivaID,HSCode,ShipmentOrigin
+ShipperPanjivaID,HSCode,PortOfLading

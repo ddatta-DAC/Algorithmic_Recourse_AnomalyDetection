@@ -86,7 +86,9 @@ def set_up_config(_DIR = None):
     use_cols = CONFIG[DIR]['use_cols']
     freq_bound = CONFIG[DIR]['low_freq_bound']
     column_value_filters = CONFIG[DIR]['column_value_filters']
-    
+    if column_value_filters is None:
+        column_value_filters ={}
+        
     NUMERIC_COLUMNS = CONFIG[DIR]['numeric_columns']
     if NUMERIC_COLUMNS is None:
         NUMERIC_COLUMNS = []  
@@ -125,9 +127,16 @@ def get_regex(_type='train'):
             return '.*0[5]_2016.csv'
         if _type == 'test':
             return '.*06_2016.csv'
-        
-
-
+    elif DIR == 'ecuador_export':   
+        if _type == 'train':
+            return '.*_2015.csv'
+        if _type == 'test':
+            return '.*0[1-8]_2016.csv'
+    elif DIR == 'colombia_export':
+        if _type == 'train':
+            return '.*0[4-5]_2016.csv'
+        if _type == 'test':
+            return '.*0[6-7]_2016.csv'
 def get_files(DIR, _type='all'):
     global DATA_SOURCE
     print(DATA_SOURCE)
@@ -209,6 +218,7 @@ def apply_value_filters(list_df):
 4 digit hs code
 '''
 def HSCode_cleanup_aux(val):
+    val = str(val)
     val = val.split(';')
     _list =['9401','9403','9201','9614','9202','9302', '9304', '6602','8201','9207','9504', '9205', '9206', '9209','9202']
     _list =['9401', '9403','9201','9202', '9205','9206', '9207', '9209',  '9302', '9304' ]
@@ -237,12 +247,14 @@ def clean_train_data():
     global DIR
     global CONFIG
     global DIR_LOC
+    global use_cols
     
     files = get_files(DIR, 'train')
     print('Columns read ', use_cols)
     list_df = [pd.read_csv(_file, usecols=use_cols, low_memory=False) for _file in files]
     list_df = [_.dropna() for _  in list_df]
-    list_df = HSCode_cleanup(list_df)
+    if 'HSCode' in use_cols:
+        list_df = HSCode_cleanup(list_df)
     list_df_1 = apply_value_filters(list_df)
     master_df = None
     
@@ -344,8 +356,6 @@ def replace_attr_with_id(row, attr, val2id_dict):
         return val2id_dict[val]
 
 
-
-
 def setup_testing_data(
         test_df,
         train_df,
@@ -430,7 +440,8 @@ def create_train_test_sets():
         for _file in test_files
     ]
     list_test_df = [ _.dropna() for _ in list_test_df]
-    list_test_df = HSCode_cleanup(list_test_df)
+    if 'HSCode' in use_cols:
+        list_test_df = HSCode_cleanup(list_test_df)
 
     test_df = None
     
@@ -471,7 +482,7 @@ def create_train_test_sets():
     return train_df, test_df, col_val2id_dict
 
 
-DIR = 'us_import3'
+DIR = 'colombia_export'
 set_up_config(DIR)
 train_df, test_df, col_val2id_dict = create_train_test_sets()
 
