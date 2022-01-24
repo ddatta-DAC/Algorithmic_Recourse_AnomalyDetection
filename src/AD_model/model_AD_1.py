@@ -178,25 +178,26 @@ class AD_model_container():
         self, 
         x_test: np.array
     ):
-        bs = 512
-        results = []
-       
-        num_batches = x_test.shape[0] // bs + 1
-        idx = np.arange(x_test.shape[0])
-        for b in range(num_batches):
-            b_idx = idx[b * bs:(b + 1) * bs]
-            if len(b_idx)==0 : 
-                break
-            
-            x = LT(x_test[b_idx]).to(self.device)
-           
-            score_values = self.model(x)
-            vals = score_values.cpu().data.numpy().tolist()
-            try:
-                results.extend(vals)
-            except:
-                results.append(vals)
-        return results
+        with torch.no_grad():
+            bs = 512
+            results = []
+
+            num_batches = x_test.shape[0] // bs + 1
+            idx = np.arange(x_test.shape[0])
+            for b in range(num_batches):
+                b_idx = idx[b * bs:(b + 1) * bs]
+                if len(b_idx)==0 : 
+                    break
+
+                x = LT(x_test[b_idx]).to(self.device)
+
+                score_values = self.model(x)
+                vals = score_values.cpu().data.numpy().tolist()
+                try:
+                    results.extend(vals)
+                except:
+                    results.append(vals)
+            return results
 
     def save_model(
         self, 
@@ -244,7 +245,10 @@ class AD_model_container():
         self, 
         x_test: np.array
     ):
+       
         return self.score_samples(x_test)
+    
+        
     
     
     
