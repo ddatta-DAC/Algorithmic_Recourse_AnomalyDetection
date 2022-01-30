@@ -19,9 +19,14 @@ from joblib import Parallel, delayed
 import multiprocessing as MP
 # -------------------------
 file_path = os.path.realpath(__file__)
-print(file_path)
-CONFIG_FILE = os.path.join( os.path.basename(file_path) ,'config.yaml')
+base_path =  os.path.dirname(file_path)
+print(base_path)
 
+CONFIG_FILE = os.path.join( base_path ,'config.yaml')
+print(CONFIG_FILE)
+
+
+# --------------------------
 class node_fetcher:
     def __init__(self, DIR, embedding_dim = None):
         self.DIR = DIR
@@ -33,15 +38,16 @@ class node_fetcher:
     
     def load_embeddings(self):
         global CONFIG_FILE
-        with open('config.yaml', 'r') as fh:
+        global base_path
+        with open(CONFIG_FILE, 'r') as fh:
             config = yaml.safe_load(fh)
         if self.embedding_dim  is None:
             self.embedding_dim  = config['embedding_dimension']
         emb_save_dir = os.path.join(config['kg_emb_save_dir'], self.DIR)
-        with open(os.path.join(emb_save_dir, 'KG_DM_nodeEmb_{}.pkl'.format(self.embedding_dim)), 'rb') as fh:
+        with open(os.path.join(base_path, emb_save_dir, 'KG_DM_nodeEmb_{}.pkl'.format(self.embedding_dim)), 'rb') as fh:
             self.node_emb_dict = pickle.load(fh)
         
-        with open(os.path.join(emb_save_dir, 'KG_DM_edgeEmb_{}.pkl'.format(self.embedding_dim)), 'rb') as fh:
+        with open(os.path.join(base_path, emb_save_dir, 'KG_DM_edgeEmb_{}.pkl'.format(self.embedding_dim)), 'rb') as fh:
             self.edge_emb_dict = pickle.load(fh)
             
         
@@ -76,7 +82,8 @@ class node_fetcher:
         self, 
         head: List, 
         rel: List, 
-        num_NN:int = 10
+        num_NN:int = 10,
+        max_iter = 10
     ):
         domain, entity_id = head[0], head[1]
         
@@ -92,7 +99,8 @@ class node_fetcher:
         
         rel.remove(domain)
         tail_domain = rel[0]
-        
+       
+     
         # Use an expanding search approach --- nearest neighbors may not be of desired domain type
         k = num_NN * 100
         res = []
@@ -104,29 +112,42 @@ class node_fetcher:
             if cand_dom != tail_domain: 
                 return None
             return (d_entity.split('_')[1],_dist)
-            
-        while True:
+        
+        iter = 0
+        while True and iter <= max_iter:
+            iter+=1
             # Find the nearest neighbors
             
             dist , fetched_idx = self.faiss_index.search(x, k) 
-            fetched_idx = fetched_idx[0].tolist()
-            dist = dist[0].tolist()
-
-            res = Parallel(
-                n_jobs = MP.cpu_count(),prefer="threads"
-            )(delayed(aux) ( _idx, _dist,) for _idx, _dist in zip(fetched_idx, dist ))
-            res = [ _ for _ in res if _ is not None]
+           
+            _fetched_idx = fetched_idx[0].tolist()
+            _dist = dist[0].tolist()
+            dist = []
+            fetched_idx = []
+            for _fi,_dist in zip(_fetched_idx, _dist):
+                if _fi > 0 :
+                    dist.append(_dist)
+                    fetched_idx.append(_fi)
             
+            if len(fetched_idx)>0:
+                res = Parallel(
+                    n_jobs = MP.cpu_count(),prefer="threads"
+                )(delayed(aux) ( _idx, _dist,) for _idx, _dist in zip(fetched_idx, dist ))
+                res = [ _ for _ in res if _ is not None]
+            else:
+                res =[]
             if len(res)>= num_NN:
                 res = res[:num_NN]
                 break
             else:
                 k = int(k * 2.5) 
             
-        res = sorted(res, key=lambda x: x[1], reverse=True )
-        
-        NN = [_[0] for _ in res]  
-        return NN
+        try:
+            res = sorted(res, key=lambda x: x[1], reverse=True )
+            NN = [int(_[0]) for _ in res]  
+            return NN
+        except:
+            return []
                     
         
 

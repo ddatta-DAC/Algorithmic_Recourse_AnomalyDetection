@@ -34,7 +34,7 @@ KG_emb_save_dir = None
 KG_train_batchsize = 512
 KG_train_patience = 10
 KG_train_epochs = 100
-
+metapath_file = None
 # ----------------------------------------------
 
 def setup_config(_DIR):
@@ -43,6 +43,7 @@ def setup_config(_DIR):
     global KG_train_epochs
     global KG_train_patience
     global KG_train_batchsize
+    global metapath_file
     DIR = _DIR
     with open(CONFIG_FILE,'r') as fh:
         config = yaml.safe_load(fh)
@@ -54,7 +55,9 @@ def setup_config(_DIR):
     KG_train_epochs = config['kg_train_epochs']
     KG_train_patience = config['kg_train_epochs']
     KG_train_batchsize = config['kg_train_batch_size']
-    Path(os.path.join(KG_emb_save_dir, _DIR)).mkdir(exist_ok=True, parents=True)
+    Path(os.path.join(KG_emb_save_dir)).mkdir(exist_ok=True, parents=True)
+    
+    metapath_file = config['metapath_file'][DIR]
     
     return 
 
@@ -62,7 +65,9 @@ def setup_config(_DIR):
 
 def get_graphTrainingData():
     global DATA_DIR, DIR, id_col
-    with open('metapaths.txt','r') as fh:
+    global metapath_file
+    
+    with open(metapath_file,'r') as fh:
         mp = fh.readlines()
     mp = [ _.strip('\n') for _ in mp]
     mp = [ _.split(',') for _ in mp]
@@ -203,22 +208,5 @@ DIR = args.dir
 
 setup_config(DIR)
 train_model()
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
 
 
