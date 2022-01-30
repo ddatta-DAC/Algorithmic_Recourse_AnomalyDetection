@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[40]:
 
 
 import pandas as pd
@@ -44,10 +43,12 @@ class coherence_calculator:
                 j = row[col_2]
                 coocc[i][j] = row['count']
             return (key,coocc)
+        
         res = Parallel(n_jobs = MP.cpu_count())(delayed(_aux_)(pair) for pair in combinations(list(self.domain_dims.keys()),2))
         for _item in res:
             key,coocc = _item[0], _item[1]
-            self.coOccMatrix[key] = coocc      
+            self.coOccMatrix[key] = coocc 
+        
         return
     
     def calc_value(
@@ -58,9 +59,10 @@ class coherence_calculator:
         """
         p_i|p_j = p_ij| p_j
         """
-        res = 0
+        res = []
         count = 0
         fixed_cols =  [ _ for _ in self.domain_dims.keys() if _ not in modified_cols]
+        
         for mod_col in modified_cols:
             for fc in fixed_cols:
                 key = '_'.join(sorted([mod_col, fc]))
@@ -78,11 +80,19 @@ class coherence_calculator:
                 # p_j is the denominator
                 p_i = np.sum(_matrix[i,:])/np.sum(_matrix)
                 p_j = np.sum(_matrix[:,j])/np.sum(_matrix)
-                p = p_ij/(p_j)
-                print(p, p_ij, p_j, p_i)
-                res += p
+                if mod_col < fc:
+                    p_denom = p_j
+                else:
+                    p_denom = p_i
+                # print(p_ij, p_i,p_j)
+                if p_denom > 0:
+                    p = p_ij/(p_denom)
+                else:
+                    p = 0
+                p = p_ij
+                res.append(p)
                 count +=1
-        coherence = res/count
+        coherence = np.mean(res)
         return coherence
     
 

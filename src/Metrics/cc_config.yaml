@@ -1,0 +1,3 @@
+anomaly_data_path : './../recourseExpDataFetcher/FilteredAnomalies'
+normal_data_path : './../../GeneratedData/'
+ad_model_emb: 32
