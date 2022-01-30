@@ -1,7 +1,13 @@
 DATA_DIR: './../../GeneratedData'
 embedding_dimension : 100 
 kg_train_num_neg_samples : 200
-kg_train_epochs : 250
+kg_train_epochs : 300
 kg_train_patience: 10
 kg_emb_save_dir : './KG_emb'
 kg_train_batch_size : 1024
+metapath_file:
+  'us_import1': 'metapaths_us_import.txt'
+  'us_import2': 'metapaths_us_import.txt'
+  'us_import3': 'metapaths_us_import.txt'
+  'ecuador_export': 'metapaths_ecuador_export.txt'
+  'colombia_export': 'metapaths_colombia_export.txt'
