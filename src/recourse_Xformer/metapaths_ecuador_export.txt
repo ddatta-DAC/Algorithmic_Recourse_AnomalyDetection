@@ -1,0 +1,7 @@
+ShipmentDestination,GoodsShipped,PortOfUnlading
+ShipperPanjivaID,GoodsShipped,ShipmentOrigin
+GoodsShipped,Carrier,PortOfUnlading
+ConsigneePanjivaID,ShipmentDestination,PortOfUnlading
+ConsigneePanjivaID,Carrier,ShipmentDestination
+ShipperPanjivaID,Carrier,ShipmentOrigin
+ConsigneePanjivaID,Carrier,PortOfUnlading
