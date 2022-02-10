@@ -1,0 +1,5 @@
+data_loc : './../../GeneratedData'
+hyperparam_step: 0.25
+max_opt_iter: 20
+opt_LR: 0.05
+cf_save_dir: 'CF_results'

@@ -38,13 +38,14 @@ def read_metapaths():
     return metapath_list
 
 class recourse_generator:
+    
     def __init__(
         self, 
         DIR,
         domain_dims, 
         metapath_list,
         num_NN,
-        AD_model_emdDim
+        AD_model_emdDim = 32  
     ):
         global base_path, CONFIG_FILE
         self.DIR = DIR
@@ -61,11 +62,13 @@ class recourse_generator:
         print('Initialized recourse_generator')
         return 
     
+    def set_AD_obj(self, ad_obj):
+        self.ad_proc_obj  = ad_obj
+    
     def get_targetDomains(
         self,
         df_record
     ):
-        
         xformer_res = self.explainer_obj.predict_entityProb(
             df_record.copy(deep=True)
         )
@@ -99,8 +102,7 @@ class recourse_generator:
         for mp in metapath_list:
             if len(set(mp).intersection(set(target_domains))) > 0:
                 target_mp_list.append(mp)
-        
-        
+         
      
         num_NN = self.num_NN
         candidate_domEnt = OrderedDict({})
@@ -178,14 +180,16 @@ class recourse_generator:
         
         candidate_records = pd.DataFrame(candidate_records)
         candidate_records['PanjivaRecordID'] = np.arange(1,len(candidate_records)+1)
-        scores = self.ad_proc_obj.score_samples_batch(candidate_records.copy(deep=True))
-        candidate_records['score'] = scores[self.AD_model_emdDim]
+        
+        try:
+            scores = self.ad_proc_obj.score_samples_batch(candidate_records.copy(deep=True), model_emb_dim = self.AD_model_emdDim)
+        except:
+            scores = self.ad_proc_obj.score_samples_batch(candidate_records.copy(deep=True))
+        candidate_records['score'] = scores
         candidate_records = candidate_records.sort_values(by=['score'],ascending=False)
         del candidate_records['score']
         candidate_records = candidate_records.reset_index(drop=True)
         return candidate_records.head(num_cf)
-
-
 
 
 

@@ -1,0 +1,10 @@
+AD_model_emdDim: 32
+num_NN: 25
+cf_save_dir: 'CF_results'
+data_loc: './../../GeneratedData'
+metapath_file:
+  'us_import1': 'metapaths_us_import.txt'
+  'us_import2': 'metapaths_us_import.txt'
+  'us_import3': 'metapaths_us_import.txt'
+  'ecuador_export': 'metapaths_ecuador_export.txt'
+  'colombia_export': 'metapaths_colombia_export.txt'
