@@ -36,7 +36,7 @@ class condCorrectnessEvaluator:
     def __init__(
         self,
         dataset:str,
-        samples_frac = 0.2,
+        samples_frac = 0.1,
         data_id_col = 'PanjivaRecordID',
         refresh=False
     ):
@@ -72,8 +72,8 @@ class condCorrectnessEvaluator:
 
         normal_df = pd.read_csv(os.path.join(base_path, normal_df_path, self.dataset,  'train_data.csv'), index_col=None)
         anomaly_df = anomaly_df.sample(frac = samples_frac)
-        normal_df = normal_df.sample(frac = samples_frac)
-
+        # normal_df = normal_df.sample(frac = samples_frac)
+        normal_df = normal_df.sample(n = len(anomaly_df)*4)
         id_anomalyDf = anomaly_df[self.data_id_col].values
         id_normalDf = normal_df[self.data_id_col].values
         id_list = np.hstack([id_anomalyDf,id_normalDf])
@@ -127,7 +127,10 @@ class condCorrectnessEvaluator:
         record_ref['score'] = ref_score[0]
         
         rank_1 = self.get_rank(record_ref) 
+        rank_2_arr = np.searchsorted(self.score_df['score'].values, record_targets['score'].values)
         
+        res = np.where(rank_2_arr  > rank_1, 1, 0)
+        return np.mean(res)
         # for i, record_target in record_targets.iterrows():
         #     r = self.calculate(record_ref, record_target)
         #     res.append(r)

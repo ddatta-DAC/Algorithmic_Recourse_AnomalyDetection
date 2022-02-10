@@ -60,10 +60,13 @@ def convert_to_serializedID_format(
     # Convert
     def convert_aux(val, domain):
         return mapping_dict[domain][val]
-
-    for domain in tqdm(list(domain_dims.keys())):
-        target_df[domain] = target_df[domain].parallel_apply(convert_aux, args=(domain,))
-
+    
+    for domain in list(domain_dims.keys()):
+        # target_df[domain] = target_df[domain].apply(convert_aux, args=(domain,))
+        try:
+            target_df[domain] = target_df[domain].parallel_apply(convert_aux, args=(domain,))
+        except:
+            target_df[domain] = target_df[domain].apply(convert_aux, args=(domain,))
     return target_df
 
 

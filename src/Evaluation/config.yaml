@@ -1,0 +1,8 @@
+cf_results_dir:
+    'RCEAA': './../RCEAA/CF_results/{}'
+    'xformer_random': './../recourse_Xformer_random/CF_results/{}'
+    'xformer': './../recourse_Xformer/CF_results/{}'
+    'exhaustive': './../naiveBaseline_1/CF_results/{}/modify_1'
+    'FINMAP': './../FINMAP/CF_results/{}'
+    
+'data_loc': './../../GeneratedData'
