@@ -92,7 +92,7 @@ def setup_config(subDIR):
     error_tol = CONFIG['error_tol']
     model_save_dir = os.path.join(CONFIG['model_save_dir'], DIR )
     num_entities = np.sum(domain_dims['dimension'].values)
-    print('Number of entities', num_entities)
+    
     return 
 
 

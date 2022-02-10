@@ -10,6 +10,9 @@ from glob import glob
 import torch
 from utils import util
 from .model_AD_1 import AD_model_container
+from typing import *
+from torch import LongTensor as LT
+
 # ----------------------------------------------------------------
 '''
 This class is for utilizing the trained anomaly detyection models and the thresholds stored
@@ -57,15 +60,15 @@ class AD_processor:
         return
     
     def read_thresold_dict(self):
-        print('[Reading in thresholds]')
+        # print('[Reading in thresholds]')
        
         threshold_save_file =  os.path.join(
             self.rel_path, self.model_save_dir, 'threshold_dict_{}.pkl'.format('-'.join([str(_) for _ in self.perc_threshold]))
         )
-        print(threshold_save_file)
+        # print(threshold_save_file)
         with open(threshold_save_file, 'rb') as fh:
             self.threshold_dict = pickle.load(fh)
-        print (self.threshold_dict)
+        # print (self.threshold_dict)
         return 
 
     def read_models(self):
@@ -133,7 +136,10 @@ class AD_processor:
             record[d] = self.entityID2serialID_mapping_dict[d][record[d]]
         return record
     
-    def score_samples_batch(self, records : pd.DataFrame):
+    def score_samples_batch(
+        self, 
+        records : pd.DataFrame, 
+        model_emb_dim = None):
         records_serialized = util.convert_to_serializedID_format( 
             records,
             self.DIR
@@ -146,7 +152,63 @@ class AD_processor:
         score_dict = {}
         
         for emb_dim in self.MEAD_emb_list:
+            if model_emb_dim is not None and emb_dim!= model_emb_dim:
+                continue
             ad_obj = self.model_dict[emb_dim] 
             scores = ad_obj.predict(x_values)
             score_dict[emb_dim] = scores
+        if model_emb_dim is not None:
+            return score_dict[model_emb_dim]
         return score_dict
+    
+    def score_single_sample(
+        self,
+        record: pd.Series,
+        model_emb_dim = 32
+    ):
+        """
+        Get the score a single sample with the known model embedding dimension
+        """
+        record_ser = self._convert_to_serializedID_format_(record)
+        ad_obj = self.model_dict[model_emb_dim] 
+        x_values = record_ser.values.reshape([1,-1])
+        
+        score = ad_obj.predict_single_score(x_values)
+        return score.cpu().data.numpy()
+    
+    def score_sample_noBatch(
+        self,
+        records: pd.DataFrame,
+        model_emb_dim = 32
+    ):
+        """
+        Get the score a single sample with the known model embedding dimension
+        """
+        records_serialized = util.convert_to_serializedID_format( 
+            records,
+            self.DIR
+        )
+        try:
+            del serialized_record[self.id_col]
+        except:
+            pass
+        
+        ad_obj = self.model_dict[model_emb_dim] 
+       
+       
+        x_values = records_serialized.values
+        # predict_single_score can take more than 1 row of data
+        scores = ad_obj.predict_single_score(x_values)
+        
+        return scores
+    
+    def score_tensorBatch(
+        self,
+        records: LT,
+        model_emb_dim = 32
+    ):
+        """
+        not implemented 
+        """
+        ad_obj = self.model_dict[model_emb_dim]
+        return 

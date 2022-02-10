@@ -220,7 +220,7 @@ class AD_model_container():
         if self.save_path is None and path is None:
             print('Error . Null path given to load model ')
             return None
-        print('Device', self.device)
+        
         if path is None:
             path = self.save_path 
         
@@ -231,7 +231,7 @@ class AD_model_container():
             device=self.device
         )
         
-        print(self.model.emb)
+        
         self.model.load_state_dict(torch.load(path))
         self.model.to(self.device)
         self.model.eval()
@@ -245,10 +245,16 @@ class AD_model_container():
         self, 
         x_test: np.array
     ):
-       
         return self.score_samples(x_test)
     
-        
+    def predict_single_score(
+        self,
+        x_test: np.array # shape[1, num_domains]
+    ):
+        with torch.no_grad():
+            x = LT(x_test).to(self.device)
+            score_value = self.model(x)
+            return score_value
     
     
     
