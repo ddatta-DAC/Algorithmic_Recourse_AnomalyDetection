@@ -1,0 +1,8 @@
+data_loc : './../../GeneratedData'
+anomalySubDir : 'generatedAnomalies'
+read_files :
+    - 'anomalies_1_1.csv'
+    - 'anomalies_1_2.csv'
+record_count: 10000
+normalData_scorePerc_threshold: 10 
+save_dir : 'FilteredAnomalies'
