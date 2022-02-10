@@ -219,6 +219,7 @@ class tabXformerMLM_obj:
     
 
 def train_xformer_encoder(subDIR):
+    print('[train_xformer_encoder]')
     global id_col, _rel_path_
     record_data = data_fetcher.get_training_set_data(subDIR)
     del record_data[id_col]
@@ -248,17 +249,17 @@ def train_xformer_encoder(subDIR):
             device = DEVICE,
             model_save_dir = model_save_dir
     )
-
+    print('[Object created]', xformer_obj)
     losses = xformer_obj.train_model(data, batch_size = batch_size, num_epochs = train_epochs)
     xformer_obj.save_model()
 
 # ------------------------------------------------- # 
-if __name__ == "main":
+if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Pretrain the encoder through MLM like objective')
     parser.add_argument(
         '--dir', 
         type=str,
-        choices = ['us_import1', 'us_import2', 'us_import3'],
+        choices = ['us_import1', 'us_import2', 'us_import3', 'ecuador_export','colombia_export'],
         help='Train the encoder and the disposable decoder')
 
     args = parser.parse_args()

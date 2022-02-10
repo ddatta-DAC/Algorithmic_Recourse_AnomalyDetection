@@ -35,9 +35,8 @@ class anomaly_dataset(Dataset):
         alpha = np.random.uniform()
         if alpha < self.alpha_max:
             return record, np.array(labels)
-        
+            
         # Create anomaly
-       
         # perturn between 1 and 2
         count = np.random.randint(1,self.max_perturb+1)
         p_idx = np.random.choice(np.arange(seq_len),count,replace=False)

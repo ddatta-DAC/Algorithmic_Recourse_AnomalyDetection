@@ -1,0 +1,6 @@
+data_loc : './../../GeneratedData'
+anom_data_path : './../recourseExpDataFetcher/FilteredAnomalies/'
+data_count : 10000
+clf_batch_size : 512
+perturbModel_train_epochs : 100
+cf_save_dir: 'CF_results'

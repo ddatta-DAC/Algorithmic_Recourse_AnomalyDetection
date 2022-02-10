@@ -141,7 +141,10 @@ class xformer_ADExp_v1(Module):
             num_xformer_layers = encoder_num_xformer_layers,
             include_PE = encoder_include_PE
         )
-        self.encoder_obj = torch.load(pretrained_encoder_model_path)
+        if str(self.device)=="cpu":
+            self.encoder_obj = torch.load(pretrained_encoder_model_path,  map_location=torch.device('cpu'))
+        else:
+            self.encoder_obj = torch.load(pretrained_encoder_model_path)
         self.encoder_obj.eval()
         
         self.decoder_obj = adExp_decoder(
@@ -226,7 +229,10 @@ class ADExp_model_container:
     
     def load_model(self):
         fpath = os.path.join(self.model_save_dir, 'adExp_decoder_{}.pth'.format(self.signature))
-        self.ad_obj = torch.load(fpath)
+        if str(self.device)=="cpu":
+            self.ad_obj = torch.load(fpath,  map_location=torch.device('cpu'))
+        else:
+            self.ad_obj = torch.load(fpath)
         self.ad_obj.eval() 
         self.ad_obj.to(self.device)
         return self.ad_obj
@@ -288,7 +294,7 @@ class ADExp_model_container:
         num_batches = len(seq_df)//batch_size+1
         results = []
         with torch.no_grad():
-            for b_idx in tqdm(range(num_batches)): 
+            for b_idx in range(num_batches): 
                 _x = seq_x[b_idx*batch_size:(b_idx+1)*batch_size]
                 _x1 = LT(_x).to(self.device)
                 _y = self.ad_obj(_x1)

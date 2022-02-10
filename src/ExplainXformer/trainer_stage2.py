@@ -11,7 +11,7 @@ if __name__ == "__main__" :
     parser.add_argument(
         '--dir', 
         type=str,
-        choices = ['us_import1', 'us_import2', 'us_import3'],
+        choices = ['us_import1', 'us_import2', 'us_import3','ecuador_export','colombia_export'],
         help='Which data subset to use ?'
     )
 
